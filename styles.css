@@ -1,0 +1,63 @@
+* { box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #121212;
+  background-size: var(--bg-size, cover);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-position: var(--bg-position, center);
+  color: #f0f0f0;
+  margin: 0;
+  padding: 2rem;
+}
+
+h1 {
+  text-align: center;
+  color: #ffcc00;
+  margin-bottom: 1rem;
+}
+
+form, #bgInput, #bgControls, #bgAdjustControls, #zoomControl, #playerContainer, .orden-container {
+  max-width: 900px;
+  margin: 0 auto 1rem;
+  text-align: center;
+}
+
+form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+input, select, textarea, button {
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: none;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+button {
+  background-color: #ffcc00;
+  color: #000;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background-color: #e6b800;
+}
+
+#calendar {
+  max-width: 900px;
+  margin: 2rem auto;
+  background: #1e1e1e;
+  border-radius: 10px;
+  padding: 1rem;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}

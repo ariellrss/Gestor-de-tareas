@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestor de Tareas</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet" />
+</head>
+<body>
+  <h1>Gestor de Tareas</h1>
+
+  <div id="bgInput">
+    <label>Fondo personalizado: <input type="file" id="bgFile" accept="image/*" /></label>
+  </div>
+
+  <div id="bgControls">
+    <label>Tamaño:
+      <select id="bgSize">
+        <option value="cover">Cubrir</option>
+        <option value="contain">Ajustar</option>
+        <option value="auto">Auto</option>
+      </select>
+    </label>
+    <label>Posición:
+      <select id="bgPosition">
+        <option value="center">Centro</option>
+        <option value="top">Arriba</option>
+        <option value="bottom">Abajo</option>
+        <option value="left">Izquierda</option>
+        <option value="right">Derecha</option>
+      </select>
+    </label>
+  </div>
+
+  <div id="bgAdjustControls">
+    <label>Posición X: <input type="range" min="0" max="100" value="50" id="bgX" /></label>
+    <label>Posición Y: <input type="range" min="0" max="100" value="50" id="bgY" /></label>
+  </div>
+
+  <div id="zoomControl">
+    <label>Zoom del fondo: <input type="range" min="50" max="200" value="100" id="bgZoom" /> %</label>
+  </div>
+
+  <div style="text-align:center; margin-bottom:1rem;">
+    <label>Link de música (YouTube):
+      <input type="text" id="ytLink" placeholder="https://www.youtube.com/watch?v=..." style="width:300px;" />
+      <button onclick="cargarMusica()">Reproducir</button>
+    </label>
+  </div>
+
+  <div id="playerContainer"></div>
+
+  <form id="taskForm">
+    <input type="text" id="taskName" placeholder="Nombre de la tarea" required />
+    <input type="date" id="dueDate" required />
+    <select id="priority">
+      <option value="alta">Alta</option>
+      <option value="media">Media</option>
+      <option value="baja">Baja</option>
+    </select>
+    <select id="status">
+      <option value="pendiente">Pendiente</option>
+      <option value="en proceso">En proceso</option>
+      <option value="completada">Completada</option>
+    </select>
+    <textarea id="description" placeholder="Descripción de la tarea"></textarea>
+    <button type="submit">Agregar</button>
+  </form>
+
+  <div class="orden-container">
+    <label>Ordenar por:
+      <select id="ordenarPor">
+        <option value="fecha">Fecha</option>
+        <option value="prioridad">Prioridad</option>
+      </select>
+    </label>
+  </div>
+
+  <div id="calendar"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
