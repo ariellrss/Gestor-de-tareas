@@ -53,6 +53,7 @@
 
   <form id="taskForm">
     <input type="text" id="taskName" placeholder="Nombre de la tarea" required />
+    <input type="time" id="dueTime" required />
     <input type="date" id="dueDate" required />
     <select id="priority">
       <option value="alta">Alta</option>
@@ -67,16 +68,7 @@
     <textarea id="description" placeholder="Descripción de la tarea"></textarea>
     <button type="submit">Agregar</button>
   </form>
-
-  <div class="orden-container">
-    <label>Ordenar por:
-      <select id="ordenarPor">
-        <option value="fecha">Fecha</option>
-        <option value="prioridad">Prioridad</option>
-      </select>
-    </label>
-  </div>
-
+  
   <div id="calendar"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>

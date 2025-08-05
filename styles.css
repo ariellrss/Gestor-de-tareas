@@ -61,3 +61,12 @@ button:hover {
   padding: 1rem;
   box-shadow: 0 0 20px rgba(0,0,0,0.5);
 }
+
+.fc-event-title {
+  font-weight: bold;
+}
+
+.fc-event:has(.fc-event-title:contains('✅')) {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
