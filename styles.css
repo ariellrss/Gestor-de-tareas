@@ -1,36 +1,47 @@
+:root {
+  --color-fondo: #121212;
+  --color-texto: #f0f0f0;
+  --color-acento: #ffcc00;
+  --color-boton-hover: #e6b800;
+  --color-alta: #ff5252;
+  --color-media: #ffd600;
+  --color-baja: #00e676;
+  --color-completada: #90caf9;
+}
+
 * { box-sizing: border-box; }
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #121212;
+  background-color: var(--color-fondo);
   background-size: var(--bg-size, cover);
   background-repeat: no-repeat;
   background-attachment: fixed;
   background-position: var(--bg-position, center);
-  color: #f0f0f0;
+  color: var(--color-texto);
   margin: 0;
   padding: 2rem;
+  transition: background-color 0.5s, color 0.5s;
 }
 
 h1 {
   text-align: center;
-  color: #ffcc00;
+  color: var(--color-acento);
   margin-bottom: 1rem;
 }
 
-form, #bgInput, #bgControls, #bgAdjustControls, #zoomControl, #playerContainer, .orden-container {
+#paletteSelector, form, #bgInput, #bgControls, #bgAdjustControls, #zoomControl, #bgToggleContainer {
   max-width: 900px;
   margin: 0 auto 1rem;
   text-align: center;
 }
 
-form {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 10px;
+#paletteSelector label {
+  font-weight: bold;
+  margin-right: 10px;
 }
 
-input, select, textarea, button {
+select, input, textarea, button {
   padding: 10px;
   font-size: 16px;
   border-radius: 8px;
@@ -43,27 +54,64 @@ textarea {
 }
 
 button {
-  background-color: #ffcc00;
+  background-color: var(--color-acento);
   color: #000;
   cursor: pointer;
   transition: background 0.3s;
 }
 
 button:hover {
-  background-color: #e6b800;
+  background-color: var(--color-boton-hover);
+}
+
+form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+#bgPanel {
+  background: rgba(0,0,0,0.1);
+  padding: 1rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
 }
 
 #calendar {
   max-width: 900px;
   margin: 2rem auto;
-  background: #1e1e1e;
+  background: var(--color-fondo);
   border-radius: 10px;
   padding: 1rem;
   box-shadow: 0 0 20px rgba(0,0,0,0.5);
 }
 
-.fc-event-title {
+.fc-event {
+  border-radius: 6px;
   font-weight: bold;
+  color: var(--color-texto) !important;
+}
+
+.fc-daygrid-day {
+  background-color: var(--color-fondo);
+}
+
+.fc-daygrid-day-number {
+  color: var(--color-texto);
+}
+
+.fc-toolbar-title {
+  color: var(--color-acento);
+}
+
+.fc-button {
+  background: var(--color-acento) !important;
+  border: none !important;
+  color: #000 !important;
+}
+
+.fc-button:hover {
+  background: var(--color-boton-hover) !important;
 }
 
 .fc-event:has(.fc-event-title:contains('✅')) {

@@ -1,5 +1,16 @@
 let calendar;
 let tasks = [];
+let tempBgUrl = "";
+
+// Formatea fecha
+function formatearLocalYMDHM(date) {
+  let y = date.getFullYear();
+  let m = String(date.getMonth() + 1).padStart(2, '0');
+  let d = String(date.getDate()).padStart(2, '0');
+  let h = String(date.getHours()).padStart(2, '0');
+  let min = String(date.getMinutes()).padStart(2, '0');
+  return `${y}-${m}-${d}T${h}:${min}`;
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   const calendarEl = document.getElementById('calendar');
@@ -11,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     eventDidMount(info) {
       info.el.style.backgroundColor = prioridadColor(info.event.extendedProps.priority, info.event.extendedProps.status);
       info.el.style.borderColor = prioridadColor(info.event.extendedProps.priority, info.event.extendedProps.status);
-      info.el.style.color = '#222';
+      info.el.style.color = getComputedStyle(document.documentElement).getPropertyValue('--color-texto').trim();
 
       let titleText = info.event.title.replace(/^✅ |^⏳ /, '');
       if (info.event.extendedProps.status === 'completada') {
@@ -29,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
   calendar.render();
 });
 
+// Agregar tarea
 document.getElementById('taskForm').addEventListener('submit', function (e) {
   e.preventDefault();
 
@@ -38,19 +50,43 @@ document.getElementById('taskForm').addEventListener('submit', function (e) {
   const priority = document.getElementById('priority').value;
   const status = document.getElementById('status').value;
   const description = document.getElementById('description').value;
+  const repeat = document.getElementById('repeat').value;
 
   const dueDate = `${date}T${time}`;
-
   const task = { name, dueDate, priority, status, description };
   tasks.push(task);
 
+  addEventToCalendar(name, dueDate, priority, status, description);
+
+  if (repeat !== 'none') {
+    let baseDate = new Date(dueDate);
+    let hour = baseDate.getHours();
+    let minute = baseDate.getMinutes();
+
+    for (let i = 1; i <= 11; i++) {
+      let newDate = new Date(baseDate);
+      if (repeat === 'weekly') newDate.setDate(baseDate.getDate() + (7 * i));
+      else if (repeat === 'monthly') newDate.setMonth(baseDate.getMonth() + i);
+
+      newDate.setHours(hour);
+      newDate.setMinutes(minute);
+      const newDueDate = formatearLocalYMDHM(newDate);
+      tasks.push({ name, dueDate: newDueDate, priority, status, description });
+      addEventToCalendar(name, newDueDate, priority, status, description);
+    }
+  }
+
+  this.reset();
+});
+
+function addEventToCalendar(name, date, priority, status, description) {
   let displayName = name;
   if (status === 'completada') displayName = '✅ ' + name;
   else if (status === 'en proceso') displayName = '⏳ ' + name;
 
   calendar.addEvent({
     title: displayName,
-    start: dueDate,
+    start: date,
     description,
     priority,
     status,
@@ -58,10 +94,9 @@ document.getElementById('taskForm').addEventListener('submit', function (e) {
     borderColor: prioridadColor(priority, status),
     allDay: false
   });
+}
 
-  this.reset();
-});
-
+// Modal para ver/editar tarea
 function mostrarModal(event) {
   let modal = document.getElementById('modalTarea');
   if (!modal) {
@@ -81,6 +116,7 @@ function mostrarModal(event) {
         <p id="modalDescripcion"></p>
         <p id="modalEstado"></p>
         <button id="btnToggleCompletar">Cambiar estado</button>
+        <button id="btnBorrar">Borrar tarea</button>
         <button id="btnCerrar">Cerrar</button>
       </div>
     `;
@@ -93,150 +129,117 @@ function mostrarModal(event) {
   document.getElementById('modalDescripcion').textContent = event.extendedProps.description;
   document.getElementById('modalEstado').textContent = 'Estado: ' + event.extendedProps.status;
 
-  const btnToggle = document.getElementById('btnToggleCompletar');
-  btnToggle.onclick = function () {
+  // Cambiar estado
+  document.getElementById('btnToggleCompletar').onclick = function () {
     let nuevoEstado;
-    if (event.extendedProps.status === 'pendiente') {
-      nuevoEstado = 'en proceso';
-    } else if (event.extendedProps.status === 'en proceso') {
-      nuevoEstado = 'completada';
-    } else {
-      nuevoEstado = 'pendiente';
-    }
+    if (event.extendedProps.status === 'pendiente') nuevoEstado = 'en proceso';
+    else if (event.extendedProps.status === 'en proceso') nuevoEstado = 'completada';
+    else nuevoEstado = 'pendiente';
 
     const nombre = titulo;
     const fecha = formatearFechaLocal(event.start);
-
     const idx = tasks.findIndex(t => t.name === nombre && t.dueDate === fecha);
     if (idx !== -1) {
       tasks[idx].status = nuevoEstado;
-
       event.remove();
-
-      let nuevoTitulo = tasks[idx].name;
-      if (nuevoEstado === 'completada') nuevoTitulo = '✅ ' + nuevoTitulo;
-      else if (nuevoEstado === 'en proceso') nuevoTitulo = '⏳ ' + nuevoTitulo;
-
-      calendar.addEvent({
-        title: nuevoTitulo,
-        start: tasks[idx].dueDate,
-        description: tasks[idx].description,
-        priority: tasks[idx].priority,
-        status: nuevoEstado,
-        backgroundColor: prioridadColor(tasks[idx].priority, nuevoEstado),
-        borderColor: prioridadColor(tasks[idx].priority, nuevoEstado),
-        allDay: false
-      });
+      addEventToCalendar(tasks[idx].name, tasks[idx].dueDate, tasks[idx].priority, nuevoEstado, tasks[idx].description);
     }
-
     modal.style.display = 'none';
   };
 
-  document.getElementById('btnCerrar').onclick = () => modal.style.display = 'none';
+ // Borrar tarea
+document.getElementById('btnBorrar').onclick = function () {
+  const nombre = titulo;
+  const fecha = formatearFechaLocal(event.start);
+
+  if (confirm("¿Querés borrar SOLO esta copia?\nPresioná Cancelar para borrar todas las repeticiones.")) {
+    // Solo esta copia
+    tasks = tasks.filter(t => !(t.name === nombre && t.dueDate === fecha));
+    event.remove();
+  } else {
+    // Todas las copias
+    tasks = tasks.filter(t => t.name !== nombre);
+    // Borrar todas las ocurrencias en el calendario
+    calendar.getEvents().forEach(ev => {
+      if (ev.title.replace(/^✅ |^⏳ /, '') === nombre) {
+        ev.remove();
+      }
+    });
+  }
+  modal.style.display = 'none';
+};
+
 }
 
 function prioridadColor(priority, status) {
-  if (status === 'completada') return '#90caf9'; // azul para completada
-
-  // Si está "en proceso", NO cambiamos el color: usamos el color de prioridad
+  const rootStyles = getComputedStyle(document.documentElement);
+  if (status === 'completada') return rootStyles.getPropertyValue('--color-completada').trim();
   switch (priority) {
-    case 'alta': return '#ff5252';    // rojo
-    case 'media': return '#ffd600';   // amarillo
-    case 'baja': return '#00e676';    // verde
-    default: return '#90caf9';
+    case 'alta': return rootStyles.getPropertyValue('--color-alta').trim();
+    case 'media': return rootStyles.getPropertyValue('--color-media').trim();
+    case 'baja': return rootStyles.getPropertyValue('--color-baja').trim();
+    default: return rootStyles.getPropertyValue('--color-completada').trim();
   }
 }
-
 
 function formatearFechaLocal(date) {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
   return local.toISOString().slice(0, 16);
 }
 
-function cargarMusica() {
-  const link = document.getElementById('ytLink').value;
-  const videoId = extraerIDYoutube(link);
-  if (videoId) {
-    const iframe = document.createElement('iframe');
-    iframe.width = 300;
-    iframe.height = 170;
-    iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}`;
-    iframe.frameBorder = 0;
-    iframe.allow = 'autoplay; encrypted-media';
-    iframe.allowFullscreen = true;
-    const container = document.getElementById('playerContainer');
-    container.innerHTML = '';
-    container.appendChild(iframe);
-  } else {
-    alert('Link de YouTube no válido.');
+// Paletas
+document.getElementById('colorPalette').addEventListener('change', function () {
+  const palette = this.value;
+  const root = document.documentElement;
+  const palettes = {
+    default: ['#121212', '#f0f0f0', '#ffcc00', '#e6b800', '#ff5252', '#ffd600', '#00e676', '#90caf9'],
+    light: ['#ffffff', '#222222', '#007bff', '#0056b3', '#dc3545', '#ffc107', '#28a745', '#17a2b8'],
+    pastel: ['#fffaf0', '#333333', '#ffb6c1', '#ff9aa2', '#ff6961', '#fdfd96', '#77dd77', '#aec6cf'],
+    neon: ['#000000', '#39ff14', '#ff073a', '#ff5f1f', '#ff073a', '#ffea00', '#00f5ff', '#ff00ff'],
+    marina: ['#001f3f', '#cce7ff', '#0074d9', '#005fa3', '#ff4136', '#ffdc00', '#2ecc40', '#7fdbff'],
+    otono: ['#3b2f2f', '#ffecd1', '#ff7f50', '#cc5500', '#8b0000', '#ff8c00', '#b5651d', '#deb887'],
+    retro: ['#0d0221', '#fffcf2', '#ff124f', '#ff00a0', '#ff124f', '#ffe100', '#00ff9f', '#00e5ff']
+  };
+  if (palettes[palette]) {
+    const [fondo, texto, acento, botonHover, alta, media, baja, completada] = palettes[palette];
+    root.style.setProperty('--color-fondo', fondo);
+    root.style.setProperty('--color-texto', texto);
+    root.style.setProperty('--color-acento', acento);
+    root.style.setProperty('--color-boton-hover', botonHover);
+    root.style.setProperty('--color-alta', alta);
+    root.style.setProperty('--color-media', media);
+    root.style.setProperty('--color-baja', baja);
+    root.style.setProperty('--color-completada', completada);
   }
-}
-
-function extraerIDYoutube(url) {
-  const regExp = /^.*(?:youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-  const match = url.match(regExp);
-  return match && match[1].length === 11 ? match[1] : null;
-}
-
-// Botón para mostrar opciones de fondo
-const fondoBtn = document.createElement('button');
-fondoBtn.textContent = 'Configuración de Fondo';
-fondoBtn.style = `
-  display: block;
-  margin: 0 auto 1rem;
-  background: #333;
-  color: #ffcc00;
-  border-radius: 8px;
-  border: none;
-  padding: 10px 20px;
-  cursor: pointer;
-`;
-document.body.insertBefore(fondoBtn, document.getElementById('bgInput'));
-
-const fondoConfig = [
-  document.getElementById('bgInput'),
-  document.getElementById('bgControls'),
-  document.getElementById('bgAdjustControls'),
-  document.getElementById('zoomControl')
-];
-fondoConfig.forEach(el => el.style.display = 'none');
-
-fondoBtn.addEventListener('click', () => {
-  const visible = fondoConfig[0].style.display === 'block';
-  fondoConfig.forEach(el => el.style.display = visible ? 'none' : 'block');
+  calendar.refetchEvents();
 });
-document.getElementById('bgFile').addEventListener('change', function (e) {
-  const file = e.target.files[0];
+
+// Controles de fondo
+document.getElementById('bgFile').addEventListener('change', function () {
+  const file = this.files[0];
   if (file) {
     const reader = new FileReader();
-    reader.onload = function (evt) {
-      document.body.style.backgroundImage = `url(${evt.target.result})`;
-    };
+    reader.onload = e => tempBgUrl = e.target.result;
     reader.readAsDataURL(file);
   }
 });
 
-document.getElementById('bgSize').addEventListener('change', function () {
-  document.body.style.backgroundSize = this.value;
+document.getElementById('applyBgBtn').addEventListener('click', function () {
+  if (tempBgUrl) document.body.style.backgroundImage = `url(${tempBgUrl})`;
 });
 
-document.getElementById('bgPosition').addEventListener('change', function () {
-  document.body.style.backgroundPosition = this.value;
+document.getElementById('removeBgBtn').addEventListener('click', function () {
+  document.body.style.backgroundImage = "";
 });
 
-document.getElementById('bgX').addEventListener('input', function () {
-  const x = this.value;
-  const y = document.getElementById('bgY').value;
-  document.body.style.backgroundPosition = `${x}% ${y}%`;
-});
-
-document.getElementById('bgY').addEventListener('input', function () {
-  const x = document.getElementById('bgX').value;
-  const y = this.value;
-  document.body.style.backgroundPosition = `${x}% ${y}%`;
-});
-
-document.getElementById('bgZoom').addEventListener('input', function () {
-  const zoom = this.value;
-  document.body.style.backgroundSize = `${zoom}%`;
+// Panel desplegable
+document.getElementById('toggleBgPanel').addEventListener('click', function () {
+  const panel = document.getElementById('bgPanel');
+  if (panel.style.display === "none") {
+    panel.style.display = "block";
+    this.textContent = "Ocultar opciones de fondo";
+  } else {
+    panel.style.display = "none";
+    this.textContent = "Mostrar opciones de fondo";
+  }
 });
