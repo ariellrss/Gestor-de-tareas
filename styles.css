@@ -118,3 +118,28 @@ form {
   text-decoration: line-through;
   opacity: 0.7;
 }
+
+/* Forzar color de fondo completo en eventos */
+.fc-event {
+  background-color: var(--color-alta) !important; /* valor por defecto */
+  border: none !important;
+  padding: 2px 4px;
+}
+
+/* Evitar que solo salga el puntito */
+.fc-daygrid-event-dot {
+  display: none !important;
+}
+
+/* Forzar color de fondo completo según prioridad/estado */
+.fc-event.priority-alta,
+.fc-daygrid-event.priority-alta { background-color: #ff5252 !important; border-color: #ff5252 !important; color: #000 !important; }
+.fc-event.priority-media,
+.fc-daygrid-event.priority-media { background-color: #ffd600 !important; border-color: #ffd600 !important; color: #000 !important; }
+.fc-event.priority-baja,
+.fc-daygrid-event.priority-baja { background-color: #00e676 !important; border-color: #00e676 !important; color: #000 !important; }
+.fc-event.status-completada,
+.fc-daygrid-event.status-completada { background-color: #90caf9 !important; border-color: #90caf9 !important; color: #000 !important; }
+
+/* Quitar puntito de color que a veces pone FullCalendar */
+.fc-daygrid-event-dot { display: none !important; }

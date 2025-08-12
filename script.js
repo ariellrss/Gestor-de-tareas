@@ -2,7 +2,11 @@ let calendar;
 let tasks = [];
 let tempBgUrl = "";
 
-// Formatea fecha
+// UID simple
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+}
+
 function formatearLocalYMDHM(date) {
   let y = date.getFullYear();
   let m = String(date.getMonth() + 1).padStart(2, '0');
@@ -20,31 +24,50 @@ document.addEventListener('DOMContentLoaded', () => {
     height: 'auto',
     events: [],
     eventDidMount(info) {
-      info.el.style.backgroundColor = prioridadColor(info.event.extendedProps.priority, info.event.extendedProps.status);
-      info.el.style.borderColor = prioridadColor(info.event.extendedProps.priority, info.event.extendedProps.status);
+      // Construir clases según prioridad/estado y aplicarlas en el DOM
+      const p = info.event.extendedProps.priority || 'baja';
+      const s = info.event.extendedProps.status || 'pendiente';
+      const priorityClass = 'priority-' + p;
+      const classesToRemove = ['priority-alta','priority-media','priority-baja','status-completada'];
+
+      classesToRemove.forEach(c => info.el.classList.remove(c));
+      info.el.classList.add(priorityClass);
+      if (s === 'completada') info.el.classList.add('status-completada');
+
+      // Fallback: también aplicamos inline styles por si hiciera falta
+      const color = prioridadColor(p, s);
+      info.el.style.backgroundColor = color;
+      info.el.style.borderColor = color;
       info.el.style.color = getComputedStyle(document.documentElement).getPropertyValue('--color-texto').trim();
 
+      // Mostrar título con emoji según estado
       let titleText = info.event.title.replace(/^✅ |^⏳ /, '');
-      if (info.event.extendedProps.status === 'completada') {
-        info.el.innerHTML = '✅ ' + titleText;
-      } else if (info.event.extendedProps.status === 'en proceso') {
-        info.el.innerHTML = '⏳ ' + titleText;
-      } else {
-        info.el.innerHTML = titleText;
-      }
+      if (s === 'completada') info.el.innerHTML = '✅ ' + titleText;
+      else if (s === 'en proceso') info.el.innerHTML = '⏳ ' + titleText;
+      else info.el.innerHTML = titleText;
     },
     eventClick(info) {
       mostrarModal(info.event);
     }
   });
   calendar.render();
+
+  // Vista previa de color en selector de prioridad del formulario
+  const prioritySelect = document.getElementById('priority');
+  if (prioritySelect) {
+    prioritySelect.addEventListener('change', function () {
+      const color = prioridadColor(this.value, 'pendiente');
+      this.style.backgroundColor = color;
+      this.style.color = '#000';
+    });
+    prioritySelect.dispatchEvent(new Event('change'));
+  }
 });
 
-// Agregar tarea
 document.getElementById('taskForm').addEventListener('submit', function (e) {
   e.preventDefault();
 
-  const name = document.getElementById('taskName').value;
+  const name = document.getElementById('taskName').value.trim();
   const date = document.getElementById('dueDate').value;
   const time = document.getElementById('dueTime').value;
   const priority = document.getElementById('priority').value;
@@ -52,72 +75,84 @@ document.getElementById('taskForm').addEventListener('submit', function (e) {
   const description = document.getElementById('description').value;
   const repeat = document.getElementById('repeat').value;
 
-  const dueDate = `${date}T${time}`;
-  const task = { name, dueDate, priority, status, description };
-  tasks.push(task);
+  const baseDate = new Date(`${date}T${time}`);
+  const seriesId = (repeat === 'none') ? null : uid();
 
-  addEventToCalendar(name, dueDate, priority, status, description);
+  const t = { id: uid(), seriesId, name, dueDate: new Date(baseDate), priority, status, description };
+  tasks.push(t);
+  addEventToCalendar(t);
 
   if (repeat !== 'none') {
-    let baseDate = new Date(dueDate);
-    let hour = baseDate.getHours();
-    let minute = baseDate.getMinutes();
-
     for (let i = 1; i <= 11; i++) {
-      let newDate = new Date(baseDate);
-      if (repeat === 'weekly') newDate.setDate(baseDate.getDate() + (7 * i));
-      else if (repeat === 'monthly') newDate.setMonth(baseDate.getMonth() + i);
+      const newDate = new Date(baseDate);
+      if (repeat === 'weekly') newDate.setDate(newDate.getDate() + (7 * i));
+      else if (repeat === 'monthly') newDate.setMonth(newDate.getMonth() + i);
 
-      newDate.setHours(hour);
-      newDate.setMinutes(minute);
-      const newDueDate = formatearLocalYMDHM(newDate);
-      tasks.push({ name, dueDate: newDueDate, priority, status, description });
-      addEventToCalendar(name, newDueDate, priority, status, description);
+      const rt = { id: uid(), seriesId, name, dueDate: new Date(newDate), priority, status, description };
+      tasks.push(rt);
+      addEventToCalendar(rt);
     }
   }
 
   this.reset();
+  document.getElementById('priority').dispatchEvent(new Event('change'));
 });
 
-function addEventToCalendar(name, date, priority, status, description) {
-  let displayName = name;
-  if (status === 'completada') displayName = '✅ ' + name;
-  else if (status === 'en proceso') displayName = '⏳ ' + name;
+function addEventToCalendar(task) {
+  let displayName = task.name;
+  if (task.status === 'completada') displayName = '✅ ' + task.name;
+  else if (task.status === 'en proceso') displayName = '⏳ ' + task.name;
+
+  // Clase(s) a aplicar
+  const priorityClass = 'priority-' + task.priority;
+  const classes = [priorityClass];
+  if (task.status === 'completada') classes.push('status-completada');
 
   calendar.addEvent({
+    id: task.id,
     title: displayName,
-    start: date,
-    description,
-    priority,
-    status,
-    backgroundColor: prioridadColor(priority, status),
-    borderColor: prioridadColor(priority, status),
+    start: task.dueDate,
+    extendedProps: {
+      priority: task.priority,
+      status: task.status,
+      description: task.description,
+      taskId: task.id,
+      seriesId: task.seriesId
+    },
+    classNames: classes,
     allDay: false
   });
 }
 
-// Modal para ver/editar tarea
 function mostrarModal(event) {
   let modal = document.getElementById('modalTarea');
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'modalTarea';
     modal.style = `
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw; height: 100vh;
-      background: rgba(0,0,0,0.7);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 9999;
+      position: fixed; top:0; left:0; width:100vw; height:100vh;
+      background: rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center;
+      z-index:9999;
     `;
     modal.innerHTML = `
-      <div style="background:#fff; color:#222; padding:2rem; border-radius:10px; min-width:300px; text-align:center;">
+      <div style="background:#fff; color:#222; padding:2rem; border-radius:10px; min-width:320px; text-align:center;">
         <h2 id="modalTitulo"></h2>
         <p id="modalDescripcion"></p>
         <p id="modalEstado"></p>
-        <button id="btnToggleCompletar">Cambiar estado</button>
-        <button id="btnBorrar">Borrar tarea</button>
-        <button id="btnCerrar">Cerrar</button>
+        <p id="modalHora" style="font-size:0.9rem; color:#555;"></p>
+        <label>Nueva prioridad:
+          <select id="modalPriority">
+            <option value="alta">Alta</option>
+            <option value="media">Media</option>
+            <option value="baja">Baja</option>
+          </select>
+        </label>
+        <div style="display:flex; flex-wrap: wrap; gap:8px; justify-content:center; margin-top:1rem;">
+          <button id="btnToggleCompletar">Cambiar estado</button>
+          <button id="btnGuardarPrioridad">Guardar prioridad</button>
+          <button id="btnBorrar">Borrar tarea</button>
+          <button id="btnCerrar">Cerrar</button>
+        </div>
       </div>
     `;
     document.body.appendChild(modal);
@@ -126,120 +161,114 @@ function mostrarModal(event) {
   modal.style.display = 'flex';
   const titulo = event.title.replace(/^✅ |^⏳ /, '');
   document.getElementById('modalTitulo').textContent = titulo;
-  document.getElementById('modalDescripcion').textContent = event.extendedProps.description;
-  document.getElementById('modalEstado').textContent = 'Estado: ' + event.extendedProps.status;
+  document.getElementById('modalDescripcion').textContent = event.extendedProps.description || '';
+  document.getElementById('modalEstado').textContent = 'Estado: ' + (event.extendedProps.status || '');
+  const startDate = event.start;
+  document.getElementById('modalHora').textContent = 'Horario: ' + formatearLocalYMDHM(startDate);
 
-  // Cambiar estado
+  // Set current priority in modal select
+  const modalPriority = document.getElementById('modalPriority');
+  modalPriority.value = event.extendedProps.priority;
+  modalPriority.style.backgroundColor = prioridadColor(modalPriority.value, 'pendiente');
+
+  modalPriority.addEventListener('change', function () {
+    this.style.backgroundColor = prioridadColor(this.value, 'pendiente');
+  });
+
   document.getElementById('btnToggleCompletar').onclick = function () {
-    let nuevoEstado;
-    if (event.extendedProps.status === 'pendiente') nuevoEstado = 'en proceso';
-    else if (event.extendedProps.status === 'en proceso') nuevoEstado = 'completada';
-    else nuevoEstado = 'pendiente';
-
-    const nombre = titulo;
-    const fecha = formatearFechaLocal(event.start);
-    const idx = tasks.findIndex(t => t.name === nombre && t.dueDate === fecha);
+    const taskId = event.extendedProps.taskId;
+    const idx = tasks.findIndex(t => t.id === taskId);
     if (idx !== -1) {
+      const nuevoEstado = siguienteEstado(tasks[idx].status);
       tasks[idx].status = nuevoEstado;
-      event.remove();
-      addEventToCalendar(tasks[idx].name, tasks[idx].dueDate, tasks[idx].priority, nuevoEstado, tasks[idx].description);
+
+      // Actualizar título
+      const newTitle = (nuevoEstado === 'completada') ? ('✅ ' + tasks[idx].name) :
+                       (nuevoEstado === 'en proceso') ? ('⏳ ' + tasks[idx].name) :
+                       tasks[idx].name;
+      event.setProp('title', newTitle);
+      event.setExtendedProp('status', nuevoEstado);
+
+      // Actualizar clases: prioridad + posible clase de completada
+      const priorityClass = 'priority-' + tasks[idx].priority;
+      const classes = [priorityClass];
+      if (nuevoEstado === 'completada') classes.push('status-completada');
+      event.setProp('classNames', classes);
+
+      // Fallback visual inmediato
+      const color = prioridadColor(tasks[idx].priority, nuevoEstado);
+      if (event.el) {
+        event.el.style.backgroundColor = color;
+        event.el.style.borderColor = color;
+      }
     }
     modal.style.display = 'none';
   };
 
- // Borrar tarea
-document.getElementById('btnBorrar').onclick = function () {
-  const nombre = titulo;
-  const fecha = formatearFechaLocal(event.start);
+  document.getElementById('btnGuardarPrioridad').onclick = function () {
+    const nuevaPrioridad = modalPriority.value;
+    const taskId = event.extendedProps.taskId;
+    const idx = tasks.findIndex(t => t.id === taskId);
+    if (idx !== -1) {
+      tasks[idx].priority = nuevaPrioridad;
+      event.setExtendedProp('priority', nuevaPrioridad);
 
-  if (confirm("¿Querés borrar SOLO esta copia?\nPresioná Cancelar para borrar todas las repeticiones.")) {
-    // Solo esta copia
-    tasks = tasks.filter(t => !(t.name === nombre && t.dueDate === fecha));
-    event.remove();
-  } else {
-    // Todas las copias
-    tasks = tasks.filter(t => t.name !== nombre);
-    // Borrar todas las ocurrencias en el calendario
-    calendar.getEvents().forEach(ev => {
-      if (ev.title.replace(/^✅ |^⏳ /, '') === nombre) {
-        ev.remove();
+      // Actualizar clases: prioridad + posible clase de completada
+      const classes = ['priority-' + nuevaPrioridad];
+      if (tasks[idx].status === 'completada') classes.push('status-completada');
+      event.setProp('classNames', classes);
+
+      // Fallback visual inmediato
+      const color = prioridadColor(nuevaPrioridad, tasks[idx].status);
+      if (event.el) {
+        event.el.style.backgroundColor = color;
+        event.el.style.borderColor = color;
       }
-    });
-  }
-  modal.style.display = 'none';
-};
+    }
+    modal.style.display = 'none';
+  };
 
+  document.getElementById('btnBorrar').onclick = function () {
+    const taskId = event.extendedProps.taskId;
+    const seriesId = event.extendedProps.seriesId || null;
+    const confirmSolo = confirm("Presioná Aceptar para BORRAR SOLO ESTA COPIA.\nPresioná Cancelar para BORRAR TODAS LAS COPIAS de esta serie.");
+    if (confirmSolo) {
+      tasks = tasks.filter(t => t.id !== taskId);
+      event.remove();
+    } else {
+      if (seriesId) {
+        tasks = tasks.filter(t => t.seriesId !== seriesId);
+        calendar.getEvents().forEach(ev => {
+          if (ev.extendedProps.seriesId === seriesId) ev.remove();
+        });
+      } else {
+        const nombre = event.title.replace(/^✅ |^⏳ /, '');
+        tasks = tasks.filter(t => t.name !== nombre);
+        calendar.getEvents().forEach(ev => {
+          if (ev.title.replace(/^✅ |^⏳ /, '') === nombre) ev.remove();
+        });
+      }
+    }
+    modal.style.display = 'none';
+  };
+
+  document.getElementById('btnCerrar').onclick = () => modal.style.display = 'none';
+}
+
+function siguienteEstado(actual) {
+  if (actual === 'pendiente') return 'en proceso';
+  if (actual === 'en proceso') return 'completada';
+  return 'pendiente';
 }
 
 function prioridadColor(priority, status) {
-  const rootStyles = getComputedStyle(document.documentElement);
-  if (status === 'completada') return rootStyles.getPropertyValue('--color-completada').trim();
-  switch (priority) {
-    case 'alta': return rootStyles.getPropertyValue('--color-alta').trim();
-    case 'media': return rootStyles.getPropertyValue('--color-media').trim();
-    case 'baja': return rootStyles.getPropertyValue('--color-baja').trim();
-    default: return rootStyles.getPropertyValue('--color-completada').trim();
-  }
-}
-
-function formatearFechaLocal(date) {
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 16);
-}
-
-// Paletas
-document.getElementById('colorPalette').addEventListener('change', function () {
-  const palette = this.value;
-  const root = document.documentElement;
-  const palettes = {
-    default: ['#121212', '#f0f0f0', '#ffcc00', '#e6b800', '#ff5252', '#ffd600', '#00e676', '#90caf9'],
-    light: ['#ffffff', '#222222', '#007bff', '#0056b3', '#dc3545', '#ffc107', '#28a745', '#17a2b8'],
-    pastel: ['#fffaf0', '#333333', '#ffb6c1', '#ff9aa2', '#ff6961', '#fdfd96', '#77dd77', '#aec6cf'],
-    neon: ['#000000', '#39ff14', '#ff073a', '#ff5f1f', '#ff073a', '#ffea00', '#00f5ff', '#ff00ff'],
-    marina: ['#001f3f', '#cce7ff', '#0074d9', '#005fa3', '#ff4136', '#ffdc00', '#2ecc40', '#7fdbff'],
-    otono: ['#3b2f2f', '#ffecd1', '#ff7f50', '#cc5500', '#8b0000', '#ff8c00', '#b5651d', '#deb887'],
-    retro: ['#0d0221', '#fffcf2', '#ff124f', '#ff00a0', '#ff124f', '#ffe100', '#00ff9f', '#00e5ff']
+  // Colores fijos de prioridad (usados para preview en selects)
+  const coloresFijos = {
+    alta: '#ff5252',
+    media: '#ffd600',
+    baja: '#00e676',
+    completada: '#90caf9'
   };
-  if (palettes[palette]) {
-    const [fondo, texto, acento, botonHover, alta, media, baja, completada] = palettes[palette];
-    root.style.setProperty('--color-fondo', fondo);
-    root.style.setProperty('--color-texto', texto);
-    root.style.setProperty('--color-acento', acento);
-    root.style.setProperty('--color-boton-hover', botonHover);
-    root.style.setProperty('--color-alta', alta);
-    root.style.setProperty('--color-media', media);
-    root.style.setProperty('--color-baja', baja);
-    root.style.setProperty('--color-completada', completada);
-  }
-  calendar.refetchEvents();
-});
-
-// Controles de fondo
-document.getElementById('bgFile').addEventListener('change', function () {
-  const file = this.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = e => tempBgUrl = e.target.result;
-    reader.readAsDataURL(file);
-  }
-});
-
-document.getElementById('applyBgBtn').addEventListener('click', function () {
-  if (tempBgUrl) document.body.style.backgroundImage = `url(${tempBgUrl})`;
-});
-
-document.getElementById('removeBgBtn').addEventListener('click', function () {
-  document.body.style.backgroundImage = "";
-});
-
-// Panel desplegable
-document.getElementById('toggleBgPanel').addEventListener('click', function () {
-  const panel = document.getElementById('bgPanel');
-  if (panel.style.display === "none") {
-    panel.style.display = "block";
-    this.textContent = "Ocultar opciones de fondo";
-  } else {
-    panel.style.display = "none";
-    this.textContent = "Mostrar opciones de fondo";
-  }
-});
+  if (status === 'completada') return coloresFijos.completada;
+  return coloresFijos[priority] || coloresFijos.completada;
+}
