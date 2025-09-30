@@ -6,8 +6,36 @@
   <title>Gestor de Tareas</title>
   <link rel="stylesheet" href="styles.css" />
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet" />
+  <style>
+    /* Estilos adicionales para el botón de cerrar sesión */
+    #logoutBtn {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      padding: 8px 16px;
+      background-color: #ff5252;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    
+    #logoutBtn:hover {
+      background-color: #ff0000;
+    }
+    
+    /* Ajustar el contenedor principal para el botón de logout */
+    #paletteSelector {
+      margin-top: 50px;
+    }
+  </style>
 </head>
 <body>
+  <!-- El botón de cerrar sesión se agregará dinámicamente via JavaScript -->
+  
   <h1>Gestor de Tareas</h1>
 
   <!-- Selector de paleta -->
@@ -22,48 +50,6 @@
       <option value="otono">Otoño</option>
       <option value="retro">Retro Gamer</option>
     </select>
-  </div>
-
-  <!-- Botón para mostrar/ocultar controles de fondo -->
-  <div id="bgToggleContainer">
-    <button id="toggleBgPanel">Mostrar opciones de fondo</button>
-  </div>
-
-  <!-- Panel desplegable de fondo -->
-  <div id="bgPanel" style="display:none;">
-    <div id="bgInput">
-      <label>Fondo personalizado: <input type="file" id="bgFile" accept="image/*" /></label>
-      <button id="applyBgBtn">Aplicar fondo</button>
-      <button id="removeBgBtn">Quitar fondo</button>
-    </div>
-
-    <div id="bgControls">
-      <label>Tamaño:
-        <select id="bgSize">
-          <option value="cover">Cubrir</option>
-          <option value="contain">Ajustar</option>
-          <option value="auto">Auto</option>
-        </select>
-      </label>
-      <label>Posición:
-        <select id="bgPosition">
-          <option value="center">Centro</option>
-          <option value="top">Arriba</option>
-          <option value="bottom">Abajo</option>
-          <option value="left">Izquierda</option>
-          <option value="right">Derecha</option>
-        </select>
-      </label>
-    </div>
-
-    <div id="bgAdjustControls">
-      <label>Posición X: <input type="range" min="0" max="100" value="50" id="bgX" /></label>
-      <label>Posición Y: <input type="range" min="0" max="100" value="50" id="bgY" /></label>
-    </div>
-
-    <div id="zoomControl">
-      <label>Zoom del fondo: <input type="range" min="50" max="200" value="100" id="bgZoom" /> %</label>
-    </div>
   </div>
 
   <!-- Formulario de tareas -->

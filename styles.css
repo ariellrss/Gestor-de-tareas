@@ -14,10 +14,6 @@
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background-color: var(--color-fondo);
-  background-size: var(--bg-size, cover);
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-  background-position: var(--bg-position, center);
   color: var(--color-texto);
   margin: 0;
   padding: 2rem;
@@ -30,7 +26,7 @@ h1 {
   margin-bottom: 1rem;
 }
 
-#paletteSelector, form, #bgInput, #bgControls, #bgAdjustControls, #zoomControl, #bgToggleContainer {
+#paletteSelector, form {
   max-width: 900px;
   margin: 0 auto 1rem;
   text-align: center;
@@ -68,13 +64,6 @@ form {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 10px;
-}
-
-#bgPanel {
-  background: rgba(0,0,0,0.1);
-  padding: 1rem;
-  border-radius: 10px;
-  margin-bottom: 1rem;
 }
 
 #calendar {
@@ -143,3 +132,53 @@ form {
 
 /* Quitar puntito de color que a veces pone FullCalendar */
 .fc-daygrid-event-dot { display: none !important; }
+
+/* ==== PALETAS ==== */
+
+/* Paleta clara */
+body.palette-light {
+  --color-fondo: #ffffff;
+  --color-texto: #222222;
+  --color-acento: #0077cc;
+  --color-boton-hover: #005fa3;
+}
+
+/* Paleta pastel */
+body.palette-pastel {
+  --color-fondo: #fdf6f0;
+  --color-texto: #333333;
+  --color-acento: #f48fb1;
+  --color-boton-hover: #f06292;
+}
+
+/* Paleta neón */
+body.palette-neon {
+  --color-fondo: #0d0d0d;
+  --color-texto: #39ff14;
+  --color-acento: #ff00ff;
+  --color-boton-hover: #cc00cc;
+}
+
+/* Paleta marina */
+body.palette-marina {
+  --color-fondo: #001f3f;
+  --color-texto: #d9f0ff;
+  --color-acento: #0074d9;
+  --color-boton-hover: #005fa3;
+}
+
+/* Paleta otoño */
+body.palette-otono {
+  --color-fondo: #3e2723;
+  --color-texto: #ffe0b2;
+  --color-acento: #ff7043;
+  --color-boton-hover: #d84315;
+}
+
+/* Paleta retro gamer */
+body.palette-retro {
+  --color-fondo: #000000;
+  --color-texto: #33ff00;
+  --color-acento: #ff00ff;
+  --color-boton-hover: #cc00cc;
+}
